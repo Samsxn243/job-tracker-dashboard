@@ -3,6 +3,7 @@
 A full-stack job application tracker with a Kanban board, analytics dashboard, and contact management.
 
 > **Status:** Backend API complete · Frontend in progress
+> **Prerequisites:** Java 17+ · Maven 3.9+ · MongoDB Atlas (free tier)
 
 ## Tech Stack
 
