@@ -84,6 +84,85 @@ All endpoints require `Authorization: Bearer <token>` header.
 |--------|--------------------------|------------------------------------------|
 | GET    | `/api/analytics/summary` | Stats: by status, by week, response rate |
 
+## API Usage Examples
+
+### 1. Register a new account
+
+```bash
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "you@example.com",
+    "password": "yourpassword",
+    "displayName": "Your Name"
+  }'
+```
+
+Response:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "email": "you@example.com",
+  "displayName": "Your Name"
+}
+```
+
+### 2. Login
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "demo@jobtracker.dev", "password": "password123"}'
+```
+
+### 3. Create an application
+
+```bash
+curl -X POST http://localhost:8080/api/applications \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "company": "Stripe",
+    "role": "Backend Engineer",
+    "status": "APPLIED",
+    "dateApplied": "2026-05-07",
+    "tags": ["fintech", "remote"],
+    "notes": ["Applied via referral from a friend"]
+  }'
+```
+
+### 4. Move a card on the Kanban board (status update)
+
+```bash
+curl -X PATCH http://localhost:8080/api/applications/APP_ID/status \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "INTERVIEW"}'
+```
+
+### 5. Search applications
+
+```bash
+curl -s "http://localhost:8080/api/applications?search=Google" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### 6. Get analytics summary
+
+```bash
+curl -s http://localhost:8080/api/analytics/summary \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### 7. Export as CSV
+
+```bash
+curl -s http://localhost:8080/api/applications/export/csv \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -o applications.csv
+```
+
+
 ## Architecture
 
 ```
