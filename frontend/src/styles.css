@@ -1,0 +1,78 @@
+/* ══════════════════════════════════════════════
+   Job Tracker — Design System
+   Clean, modern dashboard aesthetic
+   ══════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Surfaces */
+  --bg-primary: #F4F5F7;
+  --bg-card: #FFFFFF;
+  --border: #E2E4E9;
+
+  /* Text */
+  --text-primary: #1A1D26;
+  --text-secondary: #5C6170;
+  --text-tertiary: #9095A0;
+
+  /* Accent */
+  --accent: #4F6EF7;
+  --accent-faint: rgba(79, 110, 247, 0.08);
+
+  /* Status Colors */
+  --status-wishlist: #6B7280;
+  --status-applied: #3B82F6;
+  --status-phone-screen: #8B5CF6;
+  --status-interview: #F59E0B;
+  --status-offer: #10B981;
+  --status-rejected: #EF4444;
+  --status-withdrawn: #9CA3AF;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #111318;
+    --bg-card: #1A1D26;
+    --border: #2A2D38;
+    --text-primary: #EDEEF1;
+    --text-secondary: #9095A0;
+    --text-tertiary: #5C6170;
+    --accent: #6C8AFF;
+    --accent-faint: rgba(108, 138, 255, 0.1);
+  }
+}
+
+/* Reset */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+/* Selection */
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Focus */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
