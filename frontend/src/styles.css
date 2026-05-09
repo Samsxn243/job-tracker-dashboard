@@ -5,22 +5,19 @@
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
-:root {
-  /* Surfaces */
+/* ── Light theme (default) ── */
+:root, [data-theme="light"] {
   --bg-primary: #F4F5F7;
   --bg-card: #FFFFFF;
   --border: #E2E4E9;
 
-  /* Text */
   --text-primary: #1A1D26;
   --text-secondary: #5C6170;
   --text-tertiary: #9095A0;
 
-  /* Accent */
   --accent: #4F6EF7;
   --accent-faint: rgba(79, 110, 247, 0.08);
 
-  /* Status Colors */
   --status-wishlist: #6B7280;
   --status-applied: #3B82F6;
   --status-phone-screen: #8B5CF6;
@@ -30,9 +27,23 @@
   --status-withdrawn: #9CA3AF;
 }
 
-/* Dark mode */
+/* ── Dark theme ── */
+[data-theme="dark"] {
+  --bg-primary: #111318;
+  --bg-card: #1A1D26;
+  --border: #2A2D38;
+
+  --text-primary: #EDEEF1;
+  --text-secondary: #9095A0;
+  --text-tertiary: #5C6170;
+
+  --accent: #6C8AFF;
+  --accent-faint: rgba(108, 138, 255, 0.1);
+}
+
+/* Auto dark mode when no preference is saved */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg-primary: #111318;
     --bg-card: #1A1D26;
     --border: #2A2D38;
@@ -44,7 +55,7 @@
   }
 }
 
-/* Reset */
+/* ── Reset ── */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
@@ -57,21 +68,22 @@ html, body {
   background: var(--bg-primary);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-/* Scrollbar */
+/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
 
-/* Selection */
+/* ── Selection ── */
 ::selection {
   background: var(--accent);
   color: #fff;
 }
 
-/* Focus */
+/* ── Focus ── */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;

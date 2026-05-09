@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '@app/services/auth.service';
@@ -11,12 +11,19 @@ import { ApplicationService } from '@app/services/application.service';
   template: `
     <nav class="navbar">
       <div class="nav-left">
-        <a routerLink="/" class="logo">Job Tracker</a>
+        <a routerLink="/" class="logo">
+          <span class="logo-icon">◆</span> Job Tracker
+        </a>
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Board</a>
         <a routerLink="/analytics" routerLinkActive="active" class="nav-link">Analytics</a>
       </div>
       <div class="nav-right">
-        <button class="btn-ghost" (click)="exportCsv()">Export CSV</button>
+        <button class="btn-ghost" (click)="exportCsv()" title="Export as CSV">
+          ↓ Export
+        </button>
+        <button class="btn-theme" (click)="toggleTheme()" [title]="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
+          {{ isDark ? '☀️' : '🌙' }}
+        </button>
         <span class="user-name">{{ auth.currentUser?.displayName }}</span>
         <button class="btn-ghost btn-logout" (click)="logout()">Logout</button>
       </div>
@@ -48,6 +55,14 @@ import { ApplicationService } from '@app/services/application.service';
       color: var(--text-primary);
       text-decoration: none;
       margin-right: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .logo-icon {
+      color: var(--accent);
+      font-size: 0.9rem;
     }
 
     .nav-link {
@@ -86,11 +101,48 @@ import { ApplicationService } from '@app/services/application.service';
       color: var(--text-primary);
     }
 
+    .btn-theme {
+      padding: 0.35rem 0.55rem;
+      border-radius: 6px;
+      background: none;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 0.95rem;
+      line-height: 1;
+      transition: all 0.15s;
+    }
+
+    .btn-theme:hover {
+      background: var(--bg-primary);
+    }
+
     .btn-logout { color: var(--status-rejected); border-color: transparent; }
   `]
 })
-export class NavbarComponent {
+export class NavbarComponent implements OnInit {
+  isDark = false;
+
   constructor(public auth: AuthService, private appService: ApplicationService) {}
+
+  ngOnInit() {
+    const saved = localStorage.getItem('jt_theme');
+    if (saved) {
+      this.isDark = saved === 'dark';
+    } else {
+      this.isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    this.applyTheme();
+  }
+
+  toggleTheme() {
+    this.isDark = !this.isDark;
+    localStorage.setItem('jt_theme', this.isDark ? 'dark' : 'light');
+    this.applyTheme();
+  }
+
+  private applyTheme() {
+    document.documentElement.setAttribute('data-theme', this.isDark ? 'dark' : 'light');
+  }
 
   exportCsv() {
     this.appService.exportCsv();
