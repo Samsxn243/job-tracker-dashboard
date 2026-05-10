@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CdkDragDrop, DragDropModule, transferArrayItem } from '@angular/cdk/drag-drop';
@@ -19,16 +19,44 @@ import { ConfirmDialogComponent } from '@app/components/confirm-dialog/confirm-d
   standalone: true,
   imports: [CommonModule, FormsModule, DragDropModule, AppCardComponent, AppFormComponent, ConfirmDialogComponent],
   template: `
+    <!-- Toast notification -->
+    <div class="toast" *ngIf="toast" [class.toast-error]="toastType === 'error'">
+      {{ toast }}
+    </div>
+
     <div class="board-toolbar">
       <div class="toolbar-left">
-        <input class="search-input" type="text" placeholder="Search companies, roles..."
-               [(ngModel)]="searchQuery" (ngModelChange)="onSearch()" />
+        <input class="search-input" type="text"
+               placeholder="Search companies, roles... (Ctrl+K)"
+               [(ngModel)]="searchQuery" (ngModelChange)="onSearch()"
+               #searchInput />
         <span class="app-count">{{ totalCount }} applications</span>
       </div>
       <button class="btn-add" (click)="openCreate()">+ New Application</button>
     </div>
 
-    <div class="board">
+    <!-- Loading skeleton -->
+    <div class="board" *ngIf="loading">
+      <div class="column" *ngFor="let _ of [1,2,3,4,5]">
+        <div class="column-header">
+          <div class="skeleton skeleton-dot"></div>
+          <div class="skeleton skeleton-title"></div>
+        </div>
+        <div class="column-body">
+          <div class="skeleton skeleton-card" *ngFor="let _ of [1,2]"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div class="error-state" *ngIf="error && !loading">
+      <p class="error-icon">⚠</p>
+      <p class="error-msg">{{ error }}</p>
+      <button class="btn-retry" (click)="loadApplications()">Try Again</button>
+    </div>
+
+    <!-- Kanban board -->
+    <div class="board" *ngIf="!loading && !error">
       <div class="column" *ngFor="let status of statuses">
         <div class="column-header">
           <div class="column-dot" [style.background]="statusColors[status]"></div>
@@ -52,7 +80,8 @@ import { ConfirmDialogComponent } from '@app/components/confirm-dialog/confirm-d
           </div>
 
           <div class="empty-state" *ngIf="!columns[status]?.length">
-            Drop here
+            <span class="empty-icon">{{ getEmptyIcon(status) }}</span>
+            <span>{{ getEmptyText(status) }}</span>
           </div>
         </div>
       </div>
@@ -73,6 +102,34 @@ import { ConfirmDialogComponent } from '@app/components/confirm-dialog/confirm-d
     </app-confirm-dialog>
   `,
   styles: [`
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      top: 68px;
+      right: 1.5rem;
+      background: var(--status-offer);
+      color: #fff;
+      padding: 0.6rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 500;
+      animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.2s forwards;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .toast-error { background: var(--status-rejected); }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; transform: translateY(-8px); }
+    }
+
+    /* ── Toolbar ── */
     .board-toolbar {
       display: flex;
       justify-content: space-between;
@@ -94,12 +151,14 @@ import { ConfirmDialogComponent } from '@app/components/confirm-dialog/confirm-d
       font-size: 0.875rem;
       background: var(--bg-card);
       color: var(--text-primary);
-      width: 260px;
+      width: 300px;
+      font-family: inherit;
     }
 
     .search-input:focus {
       outline: none;
       border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-faint);
     }
 
     .app-count {
@@ -117,10 +176,12 @@ import { ConfirmDialogComponent } from '@app/components/confirm-dialog/confirm-d
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
+      transition: all 0.15s;
     }
 
-    .btn-add:hover { opacity: 0.9; }
+    .btn-add:hover { opacity: 0.9; transform: translateY(-1px); }
 
+    /* ── Board ── */
     .board {
       display: flex;
       gap: 0.75rem;
@@ -182,26 +243,72 @@ import { ConfirmDialogComponent } from '@app/components/confirm-dialog/confirm-d
       background: var(--accent-faint);
     }
 
+    /* ── Empty states ── */
     .empty-state {
       text-align: center;
       padding: 2rem 0.5rem;
       font-size: 0.8rem;
       color: var(--text-tertiary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
     }
 
-    /* Drag styles */
+    .empty-icon { font-size: 1.3rem; }
+
+    /* ── Error state ── */
+    .error-state {
+      text-align: center;
+      padding: 4rem 1rem;
+    }
+
+    .error-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+    .error-msg {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+
+    .btn-retry {
+      padding: 0.55rem 1.25rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ── Skeleton loading ── */
+    .skeleton {
+      background: linear-gradient(90deg,
+        var(--border) 25%, var(--bg-card) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+      border-radius: 6px;
+    }
+
+    .skeleton-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .skeleton-title { width: 80px; height: 14px; }
+    .skeleton-card { height: 90px; border-radius: 10px; }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── Drag styles ── */
     .cdk-drag-preview {
       border-radius: 10px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.15);
     }
 
-    .cdk-drag-placeholder {
-      opacity: 0.3;
-    }
+    .cdk-drag-placeholder { opacity: 0.3; }
 
-    .cdk-drag-animating {
-      transition: transform 200ms ease;
-    }
+    .cdk-drag-animating { transition: transform 200ms ease; }
   `]
 })
 export class KanbanBoardComponent implements OnInit {
@@ -214,13 +321,33 @@ export class KanbanBoardComponent implements OnInit {
   searchQuery = '';
   totalCount = 0;
 
+  loading = true;
+  error = '';
+
   showForm = false;
   selectedApp: Application | null = null;
   deleteId: string | null = null;
   deleteName = '';
 
+  toast = '';
+  toastType: 'success' | 'error' = 'success';
+  private toastTimer: any;
+
   constructor(private appService: ApplicationService) {
     this.statuses.forEach(s => this.columns[s] = []);
+  }
+
+  // Ctrl+K to focus search
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      const input = document.querySelector<HTMLInputElement>('.search-input');
+      input?.focus();
+    }
+    if (e.key === 'Escape') {
+      if (this.showForm) this.closeForm();
+    }
   }
 
   ngOnInit() {
@@ -228,9 +355,19 @@ export class KanbanBoardComponent implements OnInit {
   }
 
   loadApplications() {
-    this.appService.getAll().subscribe(apps => {
-      this.allApps = apps;
-      this.distributeToColumns(apps);
+    this.loading = true;
+    this.error = '';
+
+    this.appService.getAll().subscribe({
+      next: (apps) => {
+        this.allApps = apps;
+        this.distributeToColumns(apps);
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Failed to load applications. Is the backend running?';
+        this.loading = false;
+      }
     });
   }
 
@@ -275,8 +412,12 @@ export class KanbanBoardComponent implements OnInit {
       next: (updated) => {
         const idx = this.allApps.findIndex(a => a.id === app.id);
         if (idx >= 0) this.allApps[idx] = updated;
+        this.showToast(`Moved ${app.company} to ${this.statusLabels[newStatus]}`);
       },
-      error: () => this.loadApplications()
+      error: () => {
+        this.showToast('Failed to update status', 'error');
+        this.loadApplications();
+      }
     });
   }
 
@@ -297,14 +438,22 @@ export class KanbanBoardComponent implements OnInit {
 
   onSave(data: Partial<Application>) {
     if (this.selectedApp) {
-      this.appService.update(this.selectedApp.id, data).subscribe(() => {
-        this.closeForm();
-        this.loadApplications();
+      this.appService.update(this.selectedApp.id, data).subscribe({
+        next: () => {
+          this.closeForm();
+          this.loadApplications();
+          this.showToast('Application updated');
+        },
+        error: () => this.showToast('Failed to save changes', 'error')
       });
     } else {
-      this.appService.create(data).subscribe(() => {
-        this.closeForm();
-        this.loadApplications();
+      this.appService.create(data).subscribe({
+        next: () => {
+          this.closeForm();
+          this.loadApplications();
+          this.showToast('Application created');
+        },
+        error: () => this.showToast('Failed to create application', 'error')
       });
     }
   }
@@ -317,9 +466,42 @@ export class KanbanBoardComponent implements OnInit {
 
   onDeleteConfirm() {
     if (!this.deleteId) return;
-    this.appService.delete(this.deleteId).subscribe(() => {
-      this.deleteId = null;
-      this.loadApplications();
+    const name = this.deleteName;
+    this.appService.delete(this.deleteId).subscribe({
+      next: () => {
+        this.deleteId = null;
+        this.loadApplications();
+        this.showToast(`Deleted ${name}`);
+      },
+      error: () => this.showToast('Failed to delete', 'error')
     });
+  }
+
+  getEmptyIcon(status: ApplicationStatus): string {
+    const icons: Record<string, string> = {
+      WISHLIST: '📋', APPLIED: '📨', PHONE_SCREEN: '📞',
+      INTERVIEW: '💬', OFFER: '🎉', REJECTED: '—', WITHDRAWN: '—'
+    };
+    return icons[status] || '📋';
+  }
+
+  getEmptyText(status: ApplicationStatus): string {
+    const texts: Record<string, string> = {
+      WISHLIST: 'Save jobs you\'re eyeing',
+      APPLIED: 'Drag cards here when applied',
+      PHONE_SCREEN: 'Phone screens land here',
+      INTERVIEW: 'Interviews in progress',
+      OFFER: 'Offers will show here 🤞',
+      REJECTED: 'Nothing here yet',
+      WITHDRAWN: 'Cards you pulled out'
+    };
+    return texts[status] || 'Drop here';
+  }
+
+  private showToast(message: string, type: 'success' | 'error' = 'success') {
+    clearTimeout(this.toastTimer);
+    this.toast = message;
+    this.toastType = type;
+    this.toastTimer = setTimeout(() => this.toast = '', 2500);
   }
 }
