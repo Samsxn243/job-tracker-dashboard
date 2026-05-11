@@ -1,9 +1,42 @@
-# Job Tracker Dashboard
+# ◆ Job Tracker Dashboard
 
-A full-stack job application tracker with a Kanban board, analytics dashboard, and contact management.
+A full-stack job application tracker with a Kanban board, analytics dashboard, and contact management — built for developers who want to stay organized during the job hunt.
 
-> **Status:** Backend API complete · Frontend in progress
-> **Prerequisites:** Java 17+ · Maven 3.9+ · MongoDB Atlas (free tier)
+![Kanban Board Demo]
+
+## Features
+
+- **Kanban Board** — Drag-and-drop cards between status columns (Wishlist → Applied → Interview → Offer)
+- **Full CRUD** — Create, edit, delete applications with contacts, notes, and tags
+- **Search & Filter** — Real-time search across companies, roles, and tags (Ctrl+K shortcut)
+- **Analytics Dashboard** — Charts for application volume, status breakdown, response rate, and top tags
+- **CSV Export** — Download all applications as a spreadsheet in one click
+- **Activity Timeline** — Audit log tracking every change per application
+- **Dark Mode** — Toggle between light and dark themes with persistence
+- **JWT Auth** — Secure token-based authentication with bcrypt password hashing
+- **Docker** — One-command setup with docker-compose
+- **CI/CD** — GitHub Actions pipeline running integration tests on every push
+
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/kanban-light.png" alt="Kanban Board - Light" width="400"/></td>
+    <td><img src="docs/screenshots/kanban-dark.png" alt="Kanban Board - Dark" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center"><em>Kanban Board — Light Mode</em></td>
+    <td align="center"><em>Kanban Board — Dark Mode</em></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/analytics.png" alt="Analytics Dashboard" width="400"/></td>
+    <td><img src="docs/screenshots/login.png" alt="Login Page" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center"><em>Analytics Dashboard</em></td>
+    <td align="center"><em>Login Page</em></td>
+  </tr>
+</table>
 
 ## Tech Stack
 
@@ -11,18 +44,9 @@ A full-stack job application tracker with a Kanban board, analytics dashboard, a
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot_3-6DB33F?style=flat&logo=spring-boot&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)
 ![Angular](https://img.shields.io/badge/Angular_17-DD0031?style=flat&logo=angular&logoColor=white)
+![Chart.js](https://img.shields.io/badge/Chart.js-FF6384?style=flat&logo=chartdotjs&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
-
-## Features
-
-- **Kanban Board** — Drag-and-drop cards between status columns (Wishlist → Applied → Interview → Offer)
-- **Full CRUD** — Create, edit, delete applications with contacts and notes
-- **Search & Filter** — Full-text search, filter by status/tag/date range
-- **Analytics** — Charts for application volume, status breakdown, response rate
-- **CSV Export** — Download all applications as a spreadsheet
-- **Activity Timeline** — Audit log showing every change per application
-- **JWT Auth** — Secure API with token-based authentication
-- **Docker** — One-command setup with docker-compose
+![GitHub Actions](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?style=flat&logo=github-actions&logoColor=white)
 
 ## Quick Start
 
@@ -34,34 +58,61 @@ cd job-tracker-dashboard
 docker-compose up --build
 ```
 
-API available at `http://localhost:8080`
-
 ### Option B: Manual
 
-**Prerequisites:** Java 17+, Maven, MongoDB running on port 27017
+**Prerequisites:** Java 17+ · Maven 3.9+ · Node 18+ · MongoDB (local or Atlas free tier)
 
 ```bash
+# Terminal 1 — Backend
 cd backend
 mvn spring-boot:run
+
+# Terminal 2 — Frontend
+cd frontend
+npm install
+ng serve
 ```
+
+Open `http://localhost:4200`
 
 ### Demo credentials
 
-On first run, the seeder creates a demo account with 15 sample applications:
+The seeder auto-creates a demo account with 15 sample applications:
 
 ```
 Email:    demo@jobtracker.dev
 Password: password123
 ```
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│            Angular 17 Frontend                  │
+│  Kanban Board · Analytics · Forms · Dark Mode   │
+│  CDK Drag-Drop · Chart.js · JWT Interceptor     │
+└────────────────────┬────────────────────────────┘
+                     │ REST / JSON
+┌────────────────────▼────────────────────────────┐
+│           Spring Boot 3 API                     │
+│  Controllers → Services → Repositories          │
+│  JWT Auth · CORS · Global Exception Handler     │
+└────────────────────┬────────────────────────────┘
+                     │ Spring Data MongoDB
+┌────────────────────▼────────────────────────────┐
+│              MongoDB Atlas                      │
+│  applications · users · activity_logs           │
+└─────────────────────────────────────────────────┘
+```
+
 ## API Reference
 
 ### Auth
 
-| Method | Endpoint             | Body                                    | Description     |
-|--------|----------------------|-----------------------------------------|-----------------|
-| POST   | `/api/auth/register` | `{ email, password, displayName }`      | Create account  |
-| POST   | `/api/auth/login`    | `{ email, password }`                   | Get JWT token   |
+| Method | Endpoint             | Description     |
+|--------|----------------------|-----------------|
+| POST   | `/api/auth/register` | Create account  |
+| POST   | `/api/auth/login`    | Get JWT token   |
 
 ### Applications
 
@@ -73,7 +124,7 @@ All endpoints require `Authorization: Bearer <token>` header.
 | GET    | `/api/applications/:id`         | Get single application               |
 | POST   | `/api/applications`             | Create application                   |
 | PUT    | `/api/applications/:id`         | Full update                          |
-| PATCH  | `/api/applications/:id/status`  | Update status only (Kanban moves)    |
+| PATCH  | `/api/applications/:id/status`  | Update status (Kanban drag-drop)     |
 | DELETE | `/api/applications/:id`         | Delete application                   |
 | GET    | `/api/applications/:id/timeline`| Activity log for this application    |
 | GET    | `/api/applications/export/csv`  | Download all as CSV                  |
@@ -86,101 +137,31 @@ All endpoints require `Authorization: Bearer <token>` header.
 
 ## API Usage Examples
 
-### 1. Register a new account
-
 ```bash
-curl -X POST http://localhost:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "you@example.com",
-    "password": "yourpassword",
-    "displayName": "Your Name"
-  }'
-```
-
-Response:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "email": "you@example.com",
-  "displayName": "Your Name"
-}
-```
-
-### 2. Login
-
-```bash
+# Login
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email": "demo@jobtracker.dev", "password": "password123"}'
-```
 
-### 3. Create an application
-
-```bash
+# Create an application
 curl -X POST http://localhost:8080/api/applications \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{
-    "company": "Stripe",
-    "role": "Backend Engineer",
-    "status": "APPLIED",
-    "dateApplied": "2026-05-07",
-    "tags": ["fintech", "remote"],
-    "notes": ["Applied via referral from a friend"]
-  }'
-```
+  -d '{"company": "Stripe", "role": "Backend Engineer", "status": "APPLIED", "tags": ["fintech"]}'
 
-### 4. Move a card on the Kanban board (status update)
-
-```bash
+# Kanban move (drag-drop)
 curl -X PATCH http://localhost:8080/api/applications/APP_ID/status \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"status": "INTERVIEW"}'
-```
 
-### 5. Search applications
-
-```bash
-curl -s "http://localhost:8080/api/applications?search=Google" \
+# Analytics
+curl http://localhost:8080/api/analytics/summary \
   -H "Authorization: Bearer YOUR_TOKEN"
-```
 
-### 6. Get analytics summary
-
-```bash
-curl -s http://localhost:8080/api/analytics/summary \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-### 7. Export as CSV
-
-```bash
-curl -s http://localhost:8080/api/applications/export/csv \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -o applications.csv
-```
-
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────┐
-│              Angular 17 Frontend            │
-│    Kanban Board · Analytics · Forms · Auth  │
-└──────────────────┬──────────────────────────┘
-                   │ REST / JSON
-┌──────────────────▼──────────────────────────┐
-│            Spring Boot 3 API                │
-│  Controllers → Services → Repositories      │
-│  JWT Auth Filter · CORS · Exception Handler │
-└──────────────────┬──────────────────────────┘
-                   │ Spring Data MongoDB
-┌──────────────────▼──────────────────────────┐
-│               MongoDB                       │
-│  applications · users · activity_logs       │
-└─────────────────────────────────────────────┘
+# Export CSV
+curl http://localhost:8080/api/applications/export/csv \
+  -H "Authorization: Bearer YOUR_TOKEN" -o applications.csv
 ```
 
 ## Project Structure
@@ -196,13 +177,31 @@ job-tracker-dashboard/
 │   │   ├── dto/           ApplicationDTO, StatusUpdateDTO, AuthDTO, AnalyticsSummaryDTO
 │   │   ├── config/        SecurityConfig, CorsConfig, JwtUtil, JwtAuthFilter, DataSeeder
 │   │   └── exception/     GlobalExceptionHandler, ResourceNotFoundException
+│   ├── src/test/java/     20 integration tests (Auth, Application CRUD, Analytics)
 │   ├── Dockerfile
 │   └── pom.xml
-├── frontend/               (coming week 2)
+├── frontend/
+│   ├── src/app/
+│   │   ├── components/    kanban-board, app-card, app-form, analytics, login, navbar
+│   │   ├── services/      auth.service, application.service
+│   │   ├── models/        application.model (interfaces, enums, constants)
+│   │   ├── guards/        auth.guard
+│   │   └── interceptors/  jwt.interceptor
+│   └── package.json
+├── docs/                   Screenshots
 ├── docker-compose.yml
 ├── .github/workflows/ci.yml
 └── .gitignore
 ```
+
+## Testing
+
+```bash
+cd backend
+mvn test
+```
+
+Runs 20 integration tests covering auth flows, CRUD operations, Kanban status updates, analytics computation, user data isolation, and validation.
 
 ## License
 
